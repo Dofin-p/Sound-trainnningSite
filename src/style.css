@@ -1,0 +1,88 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap');
+
+:root {
+  font-family: 'Outfit', system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+
+  color-scheme: dark;
+  color: rgba(255, 255, 255, 0.87);
+  background-color: #0a0a15;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  overflow: hidden;
+}
+
+#app {
+  width: 100vw;
+  height: 100vh;
+  margin: 0;
+  padding: 0;
+  position: relative;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(100, 200, 255, 0.3);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 200, 255, 0.5);
+}
+
+/* Focus styles */
+button:focus-visible {
+  outline: 2px solid #00ccff;
+  outline-offset: 2px;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 600px) {
+  #compass {
+    width: 250px !important;
+    height: 250px !important;
+  }
+
+  .compass-btn {
+    width: 50px !important;
+    height: 50px !important;
+    font-size: 12px !important;
+  }
+
+  .game-header {
+    flex-direction: column;
+    gap: 10px !important;
+  }
+
+  .title {
+    font-size: 1.5rem !important;
+  }
+
+  .panel {
+    padding: 20px !important;
+  }
+}
