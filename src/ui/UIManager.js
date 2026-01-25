@@ -21,6 +21,7 @@ export class UIManager {
                         <p class="subtitle">8方位音源方向当てゲーム</p>
                         <p class="headphones">🎧 ヘッドフォン必須 🎧</p>
                         <button id="start-btn" class="btn-primary">START GAME</button>
+                        <button id="diagnostics-btn" class="btn-secondary">🔧 Audio診断</button>
                         <button id="history-btn" class="btn-secondary">📊 履歴を見る</button>
                     </div>
                 </div>
@@ -448,6 +449,10 @@ export class UIManager {
             this.showStartScreen();
         });
 
+        document.getElementById('diagnostics-btn').addEventListener('click', () => {
+            this.showDiagnosticsScreen();
+        });
+
         document.getElementById('history-btn').addEventListener('click', () => {
             this.showHistoryScreen(this.gameManager.historyManager);
         });
@@ -614,6 +619,14 @@ export class UIManager {
         if (replayBtn) {
             replayBtn.disabled = false;
             replayBtn.textContent = '🔊 もう一度再生';
+        }
+    }
+
+    showDiagnosticsScreen() {
+        // This method will be called from diagnostics button
+        // Show the mode selector screen
+        if (window.app && window.app.diagnosticsModeSelector) {
+            window.app.diagnosticsModeSelector.show();
         }
     }
 }

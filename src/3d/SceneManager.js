@@ -83,4 +83,42 @@ export class SceneManager {
             this.sourceMesh.visible = visible;
         }
     }
+
+    /**
+     * Enable or disable camera rotation
+     * @param {boolean} enabled 
+     */
+    enableCameraRotation(enabled) {
+        this.rotationEnabled = enabled;
+        console.log(`Camera rotation ${enabled ? 'enabled' : 'disabled'}`);
+    }
+
+    /**
+     * Get camera yaw (rotation around Y axis)
+     * @returns {number} Yaw in radians
+     */
+    getCameraYaw() {
+        if (!this.camera) return 0;
+        return this.camera.rotation.y;
+    }
+
+    /**
+     * Get camera forward direction vector
+     * @returns {THREE.Vector3}
+     */
+    getCameraForward() {
+        if (!this.camera) return new THREE.Vector3(0, 0, -1);
+        const direction = new THREE.Vector3();
+        this.camera.getWorldDirection(direction);
+        return direction;
+    }
+
+    /**
+     * Get camera up direction vector
+     * @returns {THREE.Vector3}
+     */
+    getCameraUp() {
+        if (!this.camera) return new THREE.Vector3(0, 1, 0);
+        return this.camera.up.clone();
+    }
 }
