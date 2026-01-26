@@ -3,14 +3,16 @@
 
 <head>
   <meta charset="UTF-8" />
-  <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+  <!-- 先頭の / を消す（相対パスにする） -->
+  <link rel="icon" type="image/svg+xml" href="vite.svg" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>sound-direction-game</title>
-  <script type="module" src="/src/main.js"></script>
 </head>
 
 <body>
   <div id="app"></div>
+  <!-- ここも絶対パス → 相対パスに変更 -->
+  <script type="module" src="src/main.js"></script>
 </body>
 
 </html>
