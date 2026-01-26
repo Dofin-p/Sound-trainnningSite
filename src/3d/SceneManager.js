@@ -7,6 +7,13 @@ export class SceneManager {
         this.renderer = null;
         this.sourceMesh = null;
         this.gridHelper = null;
+
+        // Camera rotation control
+        this.rotationEnabled = false;
+        this.deviceOrientationSupported = false;
+        this.initialAlpha = null;
+        this.permissionGranted = false;
+        this.onDeviceOrientation = null;
     }
 
     init(container) {
@@ -53,6 +60,17 @@ export class SceneManager {
 
         // Handle Resize
         window.addEventListener('resize', () => this.onWindowResize());
+
+        // Check Device Orientation API support
+        this.deviceOrientationSupported = 'DeviceOrientationEvent' in window;
+        if (this.deviceOrientationSupported) {
+            console.log('Device Orientation API supported');
+        } else {
+            console.warn('Device Orientation API not supported');
+        }
+
+        // Bind device orientation handler
+        this.onDeviceOrientation = this.handleDeviceOrientation.bind(this);
     }
 
     onWindowResize() {
@@ -85,12 +103,49 @@ export class SceneManager {
     }
 
     /**
-     * Enable or disable camera rotation
+     * Enable or disable camera rotation via device orientation
      * @param {boolean} enabled 
      */
-    enableCameraRotation(enabled) {
+    async enableCameraRotation(enabled) {
         this.rotationEnabled = enabled;
         console.log(`Camera rotation ${enabled ? 'enabled' : 'disabled'}`);
+
+        if (!this.deviceOrientationSupported) {
+            console.warn('Device Orientation not supported, rotation will not work');
+            return;
+        }
+
+        if (enabled) {
+            // Request permission for iOS 13+
+            if (typeof DeviceOrientationEvent !== 'undefined' &&
+                typeof DeviceOrientationEvent.requestPermission === 'function') {
+                try {
+                    const permission = await DeviceOrientationEvent.requestPermission();
+                    if (permission === 'granted') {
+                        this.permissionGranted = true;
+                        console.log('Device Orientation permission granted');
+                    } else {
+                        console.warn('Device Orientation permission denied');
+                        return;
+                    }
+                } catch (error) {
+                    console.error('Error requesting device orientation permission:', error);
+                    return;
+                }
+            } else {
+                // Non-iOS or older iOS, assume permission granted
+                this.permissionGranted = true;
+            }
+
+            // Add event listener
+            window.addEventListener('deviceorientation', this.onDeviceOrientation, true);
+            console.log('Device orientation listener added');
+        } else {
+            // Remove event listener
+            window.removeEventListener('deviceorientation', this.onDeviceOrientation, true);
+            this.initialAlpha = null;
+            console.log('Device orientation listener removed');
+        }
     }
 
     /**
@@ -120,5 +175,50 @@ export class SceneManager {
     getCameraUp() {
         if (!this.camera) return new THREE.Vector3(0, 1, 0);
         return this.camera.up.clone();
+    }
+
+    /**
+     * Handle device orientation event
+     * @param {DeviceOrientationEvent} event 
+     */
+    handleDeviceOrientation(event) {
+        if (!this.rotationEnabled || !this.camera) return;
+
+        const alpha = event.alpha; // Z軸周りの回転（コンパス方向、0-360度）
+        const beta = event.beta;   // X軸周りの回転（前後傾斜、-180~180度）
+        const gamma = event.gamma;  // Y軸周りの回転（左右傾斜、-90~90度）
+
+        // alphaがnullの場合は何もしない（センサーが利用できない）
+        if (alpha === null) return;
+
+        // 初回のみ初期方向を設定（較正）
+        if (this.initialAlpha === null) {
+            this.initialAlpha = alpha;
+            console.log(`Initial orientation calibrated: alpha=${alpha.toFixed(2)}°`);
+            return;
+        }
+
+        // alphaの変化量を計算（相対的な回転）
+        let deltaAlpha = alpha - this.initialAlpha;
+
+        // 360度の境界を考慮
+        if (deltaAlpha > 180) {
+            deltaAlpha -= 360;
+        } else if (deltaAlpha < -180) {
+            deltaAlpha += 360;
+        }
+
+        // 度からラジアンに変換してカメラのYawを更新
+        // マイナスをつけるのは、デバイスの回転とカメラの回転が逆方向のため
+        const yawRad = -(deltaAlpha * Math.PI / 180);
+        this.camera.rotation.y = yawRad;
+    }
+
+    /**
+     * Recalibrate the initial orientation
+     */
+    calibrateOrientation() {
+        this.initialAlpha = null;
+        console.log('Orientation calibration reset');
     }
 }
