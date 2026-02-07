@@ -52,6 +52,7 @@ export class UIManager {
                         <div class="progress">第 <span id="current-round">1</span> / <span id="max-rounds">10</span> 問</div>
                         <div class="score-display">スコア: <span id="score">0</span>点</div>
                         <div class="play-count">再生: <span id="play-count">0</span>/<span id="max-play-count">2</span>回</div>
+                        <div class="yaw-display">Yaw: <span id="yaw-value">0.00</span>°</div>
                     </div>
                     
                     <!-- Compass UI -->
@@ -306,6 +307,12 @@ export class UIManager {
 
             .play-count {
                 color: #aaa;
+            }
+
+            .yaw-display {
+                color: #00ff88;
+                font-family: 'Courier New', monospace;
+                font-weight: bold;
             }
 
             /* Compass */
@@ -726,6 +733,18 @@ export class UIManager {
         // Show the mode selector screen
         if (window.app && window.app.diagnosticsModeSelector) {
             window.app.diagnosticsModeSelector.show();
+        }
+    }
+
+    /**
+     * Yaw値を更新する
+     * @param {number} yawRadians - Yaw値（ラジアン）
+     */
+    updateYaw(yawRadians) {
+        const el = document.getElementById('yaw-value');
+        if (el) {
+            const yawDegrees = (yawRadians * 180 / Math.PI).toFixed(2);
+            el.textContent = yawDegrees;
         }
     }
 }

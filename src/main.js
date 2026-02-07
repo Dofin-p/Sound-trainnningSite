@@ -51,6 +51,15 @@ class App {
     this.sceneManager.update();
     this.gameManager.update();
 
+    // Update Yaw display and AudioListener during gameplay
+    if (this.gameManager.state === 'PLAYING' || this.gameManager.state === 'WAITING') {
+      const yaw = this.sceneManager.getCameraYaw();
+      this.uiManager.updateYaw(yaw);
+
+      // Update AudioListener orientation based on camera direction
+      this.audioManager.updateListenerOrientation(this.sceneManager);
+    }
+
     // Update AudioListener for front/back test
     if (this.frontBackTestManager && this.frontBackTestManager.isPlaying) {
       this.frontBackTestManager.updateAudioListener();

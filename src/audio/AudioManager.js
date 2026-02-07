@@ -42,7 +42,7 @@ export class AudioManager {
             this.panner.positionZ.setValueAtTime(z, this.ctx.currentTime);
         } else {
             // Fallback for older browsers
-             this.panner.setPosition(x, y, z);
+            this.panner.setPosition(x, y, z);
         }
     }
 
@@ -64,7 +64,7 @@ export class AudioManager {
 
     playSound(duration = 0.5) {
         if (!this.ctx) return;
-        
+
         // Create oscillator for sound
         const osc = this.ctx.createOscillator();
         osc.type = 'sine';
@@ -79,5 +79,31 @@ export class AudioManager {
 
         osc.start();
         osc.stop(this.ctx.currentTime + duration);
+    }
+
+    /**
+     * SceneManagerのカメラ向きを基にAudioListenerを更新する
+     * @param {SceneManager} sceneManager
+     */
+    updateListenerOrientation(sceneManager) {
+        if (!this.ctx || !sceneManager) return;
+
+        const listener = this.ctx.listener;
+        const forward = sceneManager.getCameraForward();
+        const up = sceneManager.getCameraUp();
+
+        if (!forward || !up) return;
+
+        // Update listener orientation
+        if (listener.forwardX) {
+            listener.forwardX.setValueAtTime(forward.x, this.ctx.currentTime);
+            listener.forwardY.setValueAtTime(forward.y, this.ctx.currentTime);
+            listener.forwardZ.setValueAtTime(forward.z, this.ctx.currentTime);
+            listener.upX.setValueAtTime(up.x, this.ctx.currentTime);
+            listener.upY.setValueAtTime(up.y, this.ctx.currentTime);
+            listener.upZ.setValueAtTime(up.z, this.ctx.currentTime);
+        } else {
+            listener.setOrientation(forward.x, forward.y, forward.z, up.x, up.y, up.z);
+        }
     }
 }
