@@ -2,6 +2,7 @@ export class UIManager {
     constructor() {
         this.container = null;
         this.gameManager = null;
+        this.currentMode = '8';
     }
 
     init(container, gameManager) {
@@ -18,11 +19,30 @@ export class UIManager {
                 <div id="start-screen" class="screen">
                     <div class="panel">
                         <h1 class="title">🎯 Sound Direction Trainer</h1>
-                        <p class="subtitle">8方位音源方向当てゲーム</p>
+                        <p class="subtitle">音源方向当てゲーム</p>
                         <p class="headphones">🎧 ヘッドフォン必須 🎧</p>
                         <button id="start-btn" class="btn-primary">START GAME</button>
                         <button id="diagnostics-btn" class="btn-secondary">🔧 Audio診断</button>
                         <button id="history-btn" class="btn-secondary">📊 履歴を見る</button>
+                    </div>
+                </div>
+
+                <!-- Mode Select Screen -->
+                <div id="mode-select-screen" class="screen" style="display: none;">
+                    <div class="panel">
+                        <h2 class="title">モード選択</h2>
+                        <p class="subtitle">方位数を選んでください</p>
+                        <div class="mode-buttons">
+                            <button id="mode-4-btn" class="btn-mode">
+                                <span class="mode-label">四方位</span>
+                                <span class="mode-desc">前・右・後・左</span>
+                            </button>
+                            <button id="mode-8-btn" class="btn-mode">
+                                <span class="mode-label">八方位</span>
+                                <span class="mode-desc">8方向すべて</span>
+                            </button>
+                        </div>
+                        <button id="back-from-mode-btn" class="btn-secondary">戻る</button>
                     </div>
                 </div>
 
@@ -200,6 +220,44 @@ export class UIManager {
 
             .btn-danger:hover {
                 background: rgba(255, 50, 50, 0.5);
+            }
+
+            .mode-buttons {
+                display: flex;
+                gap: 20px;
+                justify-content: center;
+                margin: 20px 0;
+            }
+
+            .btn-mode {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                padding: 25px 35px;
+                cursor: pointer;
+                background: rgba(255, 255, 255, 0.08);
+                border: 2px solid rgba(100, 200, 255, 0.3);
+                border-radius: 15px;
+                color: white;
+                transition: all 0.3s;
+            }
+
+            .btn-mode:hover {
+                background: rgba(0, 200, 255, 0.15);
+                border-color: #00ccff;
+                transform: scale(1.05);
+                box-shadow: 0 0 20px rgba(0, 200, 255, 0.3);
+            }
+
+            .mode-label {
+                font-size: 1.4rem;
+                font-weight: bold;
+                margin-bottom: 6px;
+            }
+
+            .mode-desc {
+                font-size: 0.9rem;
+                color: #aaa;
             }
 
             .btn-replay {
@@ -438,11 +496,25 @@ export class UIManager {
 
     bindEvents() {
         document.getElementById('start-btn').addEventListener('click', () => {
-            this.gameManager.start();
+            this.showModeSelectScreen();
+        });
+
+        document.getElementById('mode-4-btn').addEventListener('click', () => {
+            this.currentMode = '4';
+            this.gameManager.start('4');
+        });
+
+        document.getElementById('mode-8-btn').addEventListener('click', () => {
+            this.currentMode = '8';
+            this.gameManager.start('8');
+        });
+
+        document.getElementById('back-from-mode-btn').addEventListener('click', () => {
+            this.showStartScreen();
         });
 
         document.getElementById('restart-btn').addEventListener('click', () => {
-            this.gameManager.start();
+            this.gameManager.start(this.currentMode);
         });
 
         document.getElementById('back-to-start-btn').addEventListener('click', () => {
@@ -484,20 +556,40 @@ export class UIManager {
 
     showStartScreen() {
         document.getElementById('start-screen').style.display = 'flex';
+        document.getElementById('mode-select-screen').style.display = 'none';
         document.getElementById('game-screen').style.display = 'none';
         document.getElementById('result-screen').style.display = 'none';
         document.getElementById('history-screen').style.display = 'none';
     }
 
-    showGameScreen() {
+    showModeSelectScreen() {
         document.getElementById('start-screen').style.display = 'none';
-        document.getElementById('game-screen').style.display = 'flex';
+        document.getElementById('mode-select-screen').style.display = 'flex';
+        document.getElementById('game-screen').style.display = 'none';
         document.getElementById('result-screen').style.display = 'none';
         document.getElementById('history-screen').style.display = 'none';
     }
 
+    showGameScreen(mode = '8') {
+        document.getElementById('start-screen').style.display = 'none';
+        document.getElementById('mode-select-screen').style.display = 'none';
+        document.getElementById('game-screen').style.display = 'flex';
+        document.getElementById('result-screen').style.display = 'none';
+        document.getElementById('history-screen').style.display = 'none';
+
+        // 四方位モード時は斜め方向ボタンを非表示
+        const diagonalDirs = ['Front-Right', 'Back-Right', 'Back-Left', 'Front-Left'];
+        document.querySelectorAll('.compass-btn').forEach(btn => {
+            const dir = btn.getAttribute('data-dir');
+            if (diagonalDirs.includes(dir)) {
+                btn.style.display = mode === '4' ? 'none' : '';
+            }
+        });
+    }
+
     showResultScreen(score, correctCount, total, duration, details, historyManager) {
         document.getElementById('start-screen').style.display = 'none';
+        document.getElementById('mode-select-screen').style.display = 'none';
         document.getElementById('game-screen').style.display = 'none';
         document.getElementById('result-screen').style.display = 'flex';
         document.getElementById('history-screen').style.display = 'none';
@@ -535,6 +627,7 @@ export class UIManager {
 
     showHistoryScreen(historyManager) {
         document.getElementById('start-screen').style.display = 'none';
+        document.getElementById('mode-select-screen').style.display = 'none';
         document.getElementById('game-screen').style.display = 'none';
         document.getElementById('result-screen').style.display = 'none';
         document.getElementById('history-screen').style.display = 'flex';

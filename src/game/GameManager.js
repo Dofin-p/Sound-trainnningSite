@@ -14,6 +14,9 @@ export class GameManager {
         this.currentPosition = new THREE.Vector3();
         this.currentDirectionLabel = ''; // e.g. "Front"
 
+        // モード ('4' or '8')
+        this.mode = '8';
+
         // 再生回数制限
         this.playCount = 0;
         this.maxPlayCount = 2;
@@ -41,6 +44,14 @@ export class GameManager {
             { label: 'Front-Left', angle: 315 }  // 左前
         ];
 
+        // 4方位 (前・右・後・左)
+        this.directions4 = [
+            { label: 'Front', angle: 0 },   // 前
+            { label: 'Right', angle: 90 },  // 右
+            { label: 'Back', angle: 180 },  // 後
+            { label: 'Left', angle: 270 }   // 左
+        ];
+
         // 日本語ラベルマッピング
         this.directionLabelsJP = {
             'Front': '前',
@@ -60,16 +71,19 @@ export class GameManager {
 
     /**
      * 問題キューを生成
-     * 8方向を最低1回ずつ出題 + ランダムで2問追加
+     * 各方向を最低1回ずつ出題 + ランダムで残り問数を追加
      */
     generateQuestionQueue() {
-        // 8方向をシャッフル
-        const shuffled = [...this.directions].sort(() => Math.random() - 0.5);
+        const dirs = this.mode === '4' ? this.directions4 : this.directions;
 
-        // 追加で2問ランダム選択
+        // 全方向をシャッフル
+        const shuffled = [...dirs].sort(() => Math.random() - 0.5);
+
+        // 追加でランダム選択して合計10問にする
+        const extraCount = this.maxRounds - dirs.length;
         const extra = [];
-        for (let i = 0; i < 2; i++) {
-            const randomDir = this.directions[Math.floor(Math.random() * this.directions.length)];
+        for (let i = 0; i < extraCount; i++) {
+            const randomDir = dirs[Math.floor(Math.random() * dirs.length)];
             extra.push(randomDir);
         }
 
@@ -90,11 +104,12 @@ export class GameManager {
         return new THREE.Vector3(x, 0, z);
     }
 
-    start() {
+    start(mode = '8') {
         if (!this.audioManager.isInitialized) {
             this.audioManager.init();
         }
 
+        this.mode = mode;
         this.score = 0;
         this.currentRound = 0;
         this.roundDetails = [];
@@ -103,7 +118,7 @@ export class GameManager {
 
         this.generateQuestionQueue();
 
-        this.uiManager.showGameScreen();
+        this.uiManager.showGameScreen(this.mode);
         this.uiManager.updateScore(this.score, this.currentRound, this.maxRounds);
 
         this.nextRound();
