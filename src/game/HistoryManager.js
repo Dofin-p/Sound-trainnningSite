@@ -23,7 +23,9 @@ export class HistoryManager {
             correct: result.correct,
             total: result.total,
             duration: result.duration || 0,
-            details: result.details || []
+            details: result.details || [],
+            mode: result.mode || '8',
+            filterMode: result.filterMode || 'hrtf'
         };
         history.unshift(entry); // 最新を先頭に追加
 

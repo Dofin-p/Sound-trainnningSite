@@ -5,6 +5,9 @@ export class AudioManager {
         this.oscillator = null;
         this.gainNode = null;
         this.isInitialized = false;
+        this.filterMode = 'hrtf'; // 'hrtf' or 'filter'
+        this.frontFilter = null;
+        this.backFilter = null;
     }
 
     async init() {
@@ -25,11 +28,40 @@ export class AudioManager {
         this.panner.coneOuterAngle = 0;
         this.panner.coneOuterGain = 0;
 
+        // Create filters for front/back distinction
+        this.createFilters();
+
         // Connect panner to destination (speakers)
         this.panner.connect(this.ctx.destination);
 
         this.isInitialized = true;
         console.log("AudioManager initialized");
+    }
+
+    /**
+     * 前後弁別用フィルターを作成
+     */
+    createFilters() {
+        // Front filter (High Shelf) - 高域強調で明るい音
+        this.frontFilter = this.ctx.createBiquadFilter();
+        this.frontFilter.type = 'highshelf';
+        this.frontFilter.frequency.value = 4000;
+        this.frontFilter.gain.value = 6; // +6dB
+
+        // Back filter (Low Pass) - 高域カットでこもった音
+        this.backFilter = this.ctx.createBiquadFilter();
+        this.backFilter.type = 'lowpass';
+        this.backFilter.frequency.value = 3500;
+        this.backFilter.Q.value = 0.7;
+    }
+
+    /**
+     * フィルターモードを設定
+     * @param {string} mode - 'hrtf' or 'filter'
+     */
+    setFilterMode(mode) {
+        this.filterMode = mode;
+        console.log(`Filter mode set to: ${mode}`);
     }
 
     // Set the position of the sound source
@@ -63,6 +95,15 @@ export class AudioManager {
     }
 
     playSound(duration = 0.5) {
+        this.playSoundWithDirection(duration, null);
+    }
+
+    /**
+     * 方向を指定して音を再生（フィルターモードの場合フィルタを適用）
+     * @param {number} duration - 再生時間（秒）
+     * @param {string|null} direction - 方向 ('Front', 'Back', etc.) 
+     */
+    playSoundWithDirection(duration = 0.5, direction = null) {
         if (!this.ctx) return;
 
         // Create oscillator for sound
@@ -75,7 +116,24 @@ export class AudioManager {
         gainNode.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + duration);
 
         osc.connect(gainNode);
-        gainNode.connect(this.panner);
+
+        // Apply filter based on direction if filter mode is enabled
+        if (this.filterMode === 'filter' && direction) {
+            const isFront = direction === 'Front' || direction === 'Front-Right' || direction === 'Front-Left';
+            const isBack = direction === 'Back' || direction === 'Back-Right' || direction === 'Back-Left';
+
+            if (isFront && this.frontFilter) {
+                gainNode.connect(this.frontFilter);
+                this.frontFilter.connect(this.panner);
+            } else if (isBack && this.backFilter) {
+                gainNode.connect(this.backFilter);
+                this.backFilter.connect(this.panner);
+            } else {
+                gainNode.connect(this.panner);
+            }
+        } else {
+            gainNode.connect(this.panner);
+        }
 
         osc.start();
         osc.stop(this.ctx.currentTime + duration);

@@ -17,6 +17,9 @@ export class GameManager {
         // モード ('4' or '8')
         this.mode = '8';
 
+        // フィルターモード ('hrtf' or 'filter')
+        this.filterMode = 'hrtf';
+
         // 再生回数制限
         this.playCount = 0;
         this.maxPlayCount = 2;
@@ -104,7 +107,7 @@ export class GameManager {
         return new THREE.Vector3(x, 0, z);
     }
 
-    async start(mode = '8') {
+    async start(mode = '8', filterMode = 'hrtf') {
         try {
             if (!this.audioManager.isInitialized) {
                 await this.audioManager.init();
@@ -116,6 +119,11 @@ export class GameManager {
             }
 
             this.mode = mode;
+            this.filterMode = filterMode;
+
+            // AudioManagerにフィルターモードを設定
+            this.audioManager.setFilterMode(filterMode);
+
             this.score = 0;
             this.currentRound = 0;
             this.roundDetails = [];
@@ -178,7 +186,8 @@ export class GameManager {
     playSound() {
         if (this.playCount >= this.maxPlayCount) return;
         this.playCount++;
-        this.audioManager.playSound(1.0); // 1秒間の音
+        // 方向付きで音を再生（フィルターモードの場合にフィルタ適用）
+        this.audioManager.playSoundWithDirection(1.0, this.currentDirectionLabel);
         this.uiManager.updatePlayCount(this.playCount, this.maxPlayCount);
     }
 
@@ -242,7 +251,9 @@ export class GameManager {
                 correct: this.roundDetails.filter(d => d.isCorrect).length,
                 total: this.maxRounds,
                 duration: duration,
-                details: this.roundDetails
+                details: this.roundDetails,
+                mode: this.mode,
+                filterMode: this.filterMode
             });
         }
 
@@ -253,7 +264,8 @@ export class GameManager {
             this.maxRounds,
             duration,
             this.roundDetails,
-            this.historyManager
+            this.historyManager,
+            this.filterMode
         );
 
         // デバイスの向き検知を無効化

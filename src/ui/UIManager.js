@@ -46,6 +46,25 @@ export class UIManager {
                     </div>
                 </div>
 
+                <!-- Filter Mode Select Screen -->
+                <div id="filter-select-screen" class="screen" style="display: none;">
+                    <div class="panel">
+                        <h2 class="title">音響モード選択</h2>
+                        <p class="subtitle">前後の音の聞こえ方を選んでください</p>
+                        <div class="mode-buttons">
+                            <button id="filter-hrtf-btn" class="btn-mode">
+                                <span class="mode-label">HRTFのみ</span>
+                                <span class="mode-desc">標準（フィルターなし）</span>
+                            </button>
+                            <button id="filter-on-btn" class="btn-mode">
+                                <span class="mode-label">フィルター有り</span>
+                                <span class="mode-desc">前後の区別を強調</span>
+                            </button>
+                        </div>
+                        <button id="back-from-filter-btn" class="btn-secondary">戻る</button>
+                    </div>
+                </div>
+
                 <!-- Game Screen -->
                 <div id="game-screen" class="screen" style="display: none;">
                     <div class="game-header">
@@ -87,6 +106,7 @@ export class UIManager {
                         <div class="result-details">
                             <div>正解数: <span id="correct-count">0</span> / <span id="total-count">10</span></div>
                             <div>所要時間: <span id="duration">0秒</span></div>
+                            <div>音響モード: <span id="filter-mode-display">HRTFのみ</span></div>
                         </div>
                         <div id="result-breakdown" class="result-breakdown"></div>
                         <div class="result-buttons">
@@ -506,22 +526,38 @@ export class UIManager {
             this.showModeSelectScreen();
         });
 
+        // 方位選択 → フィルター選択画面へ
         document.getElementById('mode-4-btn').addEventListener('click', () => {
             this.currentMode = '4';
-            this.gameManager.start('4');
+            this.showFilterSelectScreen();
         });
 
         document.getElementById('mode-8-btn').addEventListener('click', () => {
             this.currentMode = '8';
-            this.gameManager.start('8');
+            this.showFilterSelectScreen();
         });
 
         document.getElementById('back-from-mode-btn').addEventListener('click', () => {
             this.showStartScreen();
         });
 
+        // フィルター選択 → ゲーム開始
+        document.getElementById('filter-hrtf-btn').addEventListener('click', () => {
+            this.currentFilterMode = 'hrtf';
+            this.gameManager.start(this.currentMode, 'hrtf');
+        });
+
+        document.getElementById('filter-on-btn').addEventListener('click', () => {
+            this.currentFilterMode = 'filter';
+            this.gameManager.start(this.currentMode, 'filter');
+        });
+
+        document.getElementById('back-from-filter-btn').addEventListener('click', () => {
+            this.showModeSelectScreen();
+        });
+
         document.getElementById('restart-btn').addEventListener('click', () => {
-            this.gameManager.start(this.currentMode);
+            this.gameManager.start(this.currentMode, this.currentFilterMode || 'hrtf');
         });
 
         document.getElementById('back-to-start-btn').addEventListener('click', () => {
@@ -565,7 +601,7 @@ export class UIManager {
      * すべての画面を非表示にするヘルパーメソッド
      */
     hideAllScreens() {
-        const screens = ['start-screen', 'mode-select-screen', 'game-screen', 'result-screen', 'history-screen'];
+        const screens = ['start-screen', 'mode-select-screen', 'filter-select-screen', 'game-screen', 'result-screen', 'history-screen'];
         screens.forEach(id => {
             const el = document.getElementById(id);
             if (el) el.style.display = 'none';
@@ -592,6 +628,11 @@ export class UIManager {
         document.getElementById('mode-select-screen').style.display = 'flex';
     }
 
+    showFilterSelectScreen() {
+        this.hideAllScreens();
+        document.getElementById('filter-select-screen').style.display = 'flex';
+    }
+
     showGameScreen(mode = '8') {
         this.hideAllScreens();
         document.getElementById('game-screen').style.display = 'flex';
@@ -606,7 +647,7 @@ export class UIManager {
         });
     }
 
-    showResultScreen(score, correctCount, total, duration, details, historyManager) {
+    showResultScreen(score, correctCount, total, duration, details, historyManager, filterMode = 'hrtf') {
         this.hideAllScreens();
         document.getElementById('result-screen').style.display = 'flex';
 
@@ -621,6 +662,10 @@ export class UIManager {
             const seconds = Math.floor(duration / 1000);
             document.getElementById('duration').textContent = `${seconds}秒`;
         }
+
+        // フィルターモード表示
+        const filterModeText = filterMode === 'filter' ? 'フィルター有り' : 'HRTFのみ';
+        document.getElementById('filter-mode-display').textContent = filterModeText;
 
         // 詳細表示
         const breakdownEl = document.getElementById('result-breakdown');
@@ -659,15 +704,20 @@ export class UIManager {
             return;
         }
 
-        listEl.innerHTML = history.map(item => `
+        listEl.innerHTML = history.map(item => {
+            const modeLabel = item.mode === '4' ? '四方位' : '八方位';
+            const filterLabel = item.filterMode === 'filter' ? 'フィルター' : 'HRTF';
+            return `
             <div class="history-item">
                 <div>
                     <div class="history-date">${historyManager.formatDate(item.playedAt)}</div>
                     <div class="history-correct">${item.correct}/${item.total} 正解</div>
+                    <div class="history-mode">${modeLabel} / ${filterLabel}</div>
                 </div>
                 <div class="history-score">${item.score}点</div>
             </div>
-        `).join('');
+        `;
+        }).join('');
     }
 
     updateScore(score, round, max) {
