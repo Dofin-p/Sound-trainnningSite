@@ -110,6 +110,11 @@ export class GameManager {
                 await this.audioManager.init();
             }
 
+            // デバイスの向き検知を有効化
+            if (this.sceneManager) {
+                await this.sceneManager.enableCameraRotation(true);
+            }
+
             this.mode = mode;
             this.score = 0;
             this.currentRound = 0;
@@ -250,6 +255,11 @@ export class GameManager {
             this.roundDetails,
             this.historyManager
         );
+
+        // デバイスの向き検知を無効化
+        if (this.sceneManager) {
+            this.sceneManager.enableCameraRotation(false);
+        }
     }
 
     update() {
