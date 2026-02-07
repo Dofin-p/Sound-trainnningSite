@@ -133,6 +133,11 @@ export class FrontBackTestManager {
     }
 
     async playTrial(trialIndex) {
+        // 毎回の試行開始時にキャリブレーション（ジャイロドリフト・持ち替え対策）
+        if (this.sceneManager) {
+            this.sceneManager.calibrateOrientation();
+        }
+
         if (trialIndex >= this.trials.length) {
             console.log("All trials completed");
             return;

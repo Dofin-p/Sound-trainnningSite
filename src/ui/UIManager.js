@@ -554,28 +554,40 @@ export class UIManager {
         });
     }
 
-    showStartScreen() {
+    /**
+     * すべての画面を非表示にするヘルパーメソッド
+     */
+    hideAllScreens() {
+        const screens = ['start-screen', 'mode-select-screen', 'game-screen', 'result-screen', 'history-screen'];
+        screens.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.style.display = 'none';
+        });
+    }
+
+    /**
+     * エラーメッセージを表示する
+     * @param {string} message - エラーメッセージ
+     */
+    showError(message) {
+        this.hideAllScreens();
         document.getElementById('start-screen').style.display = 'flex';
-        document.getElementById('mode-select-screen').style.display = 'none';
-        document.getElementById('game-screen').style.display = 'none';
-        document.getElementById('result-screen').style.display = 'none';
-        document.getElementById('history-screen').style.display = 'none';
+        alert(message);
+    }
+
+    showStartScreen() {
+        this.hideAllScreens();
+        document.getElementById('start-screen').style.display = 'flex';
     }
 
     showModeSelectScreen() {
-        document.getElementById('start-screen').style.display = 'none';
+        this.hideAllScreens();
         document.getElementById('mode-select-screen').style.display = 'flex';
-        document.getElementById('game-screen').style.display = 'none';
-        document.getElementById('result-screen').style.display = 'none';
-        document.getElementById('history-screen').style.display = 'none';
     }
 
     showGameScreen(mode = '8') {
-        document.getElementById('start-screen').style.display = 'none';
-        document.getElementById('mode-select-screen').style.display = 'none';
+        this.hideAllScreens();
         document.getElementById('game-screen').style.display = 'flex';
-        document.getElementById('result-screen').style.display = 'none';
-        document.getElementById('history-screen').style.display = 'none';
 
         // 四方位モード時は斜め方向ボタンを非表示
         const diagonalDirs = ['Front-Right', 'Back-Right', 'Back-Left', 'Front-Left'];
@@ -588,11 +600,8 @@ export class UIManager {
     }
 
     showResultScreen(score, correctCount, total, duration, details, historyManager) {
-        document.getElementById('start-screen').style.display = 'none';
-        document.getElementById('mode-select-screen').style.display = 'none';
-        document.getElementById('game-screen').style.display = 'none';
+        this.hideAllScreens();
         document.getElementById('result-screen').style.display = 'flex';
-        document.getElementById('history-screen').style.display = 'none';
 
         document.getElementById('final-score').textContent = score;
         document.getElementById('correct-count').textContent = correctCount;
@@ -626,10 +635,7 @@ export class UIManager {
     }
 
     showHistoryScreen(historyManager) {
-        document.getElementById('start-screen').style.display = 'none';
-        document.getElementById('mode-select-screen').style.display = 'none';
-        document.getElementById('game-screen').style.display = 'none';
-        document.getElementById('result-screen').style.display = 'none';
+        this.hideAllScreens();
         document.getElementById('history-screen').style.display = 'flex';
 
         const listEl = document.getElementById('history-list');

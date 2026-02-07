@@ -104,27 +104,37 @@ export class GameManager {
         return new THREE.Vector3(x, 0, z);
     }
 
-    start(mode = '8') {
-        if (!this.audioManager.isInitialized) {
-            this.audioManager.init();
+    async start(mode = '8') {
+        try {
+            if (!this.audioManager.isInitialized) {
+                await this.audioManager.init();
+            }
+
+            this.mode = mode;
+            this.score = 0;
+            this.currentRound = 0;
+            this.roundDetails = [];
+            this.startTime = Date.now();
+            this.endTime = null;
+
+            this.generateQuestionQueue();
+
+            this.uiManager.showGameScreen(this.mode);
+            this.uiManager.updateScore(this.score, this.currentRound, this.maxRounds);
+
+            this.nextRound();
+        } catch (error) {
+            console.error('Failed to start game:', error);
+            this.uiManager.showError('ゲームの開始に失敗しました。ページを再読み込みしてください。');
         }
-
-        this.mode = mode;
-        this.score = 0;
-        this.currentRound = 0;
-        this.roundDetails = [];
-        this.startTime = Date.now();
-        this.endTime = null;
-
-        this.generateQuestionQueue();
-
-        this.uiManager.showGameScreen(this.mode);
-        this.uiManager.updateScore(this.score, this.currentRound, this.maxRounds);
-
-        this.nextRound();
     }
 
     nextRound() {
+        // 毎回の問題開始時にキャリブレーション（ジャイロドリフト・持ち替え対策）
+        if (this.sceneManager) {
+            this.sceneManager.calibrateOrientation();
+        }
+
         if (this.currentRound >= this.maxRounds) {
             this.endGame();
             return;
