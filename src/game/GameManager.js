@@ -17,7 +17,7 @@ export class GameManager {
         // モード ('4' or '8')
         this.mode = '8';
 
-        // フィルターモード ('hrtf' or 'filter')
+        // フィルターモード ('hrtf', 'filter', or 'lr-enhance')
         this.filterMode = 'hrtf';
 
         // 再生回数制限
@@ -168,9 +168,14 @@ export class GameManager {
         this.currentPosition = this.angleToPosition(dir.angle);
 
         // Update Audio & Visuals
-        this.audioManager.setSourcePosition(this.currentPosition.x, this.currentPosition.y, this.currentPosition.z);
+        // lr-enhance モードでは X座標（左右成分）を2倍に拡張して ITD/ILD を強調
+        if (this.filterMode === 'lr-enhance') {
+            this.audioManager.setSourcePosition(this.currentPosition.x * 2.0, this.currentPosition.y, this.currentPosition.z);
+        } else {
+            this.audioManager.setSourcePosition(this.currentPosition.x, this.currentPosition.y, this.currentPosition.z);
+        }
 
-        // Visuals: Hide cues during test
+        // Visuals: 常に元の正確な座標を渡す（正解表示は元の位置を保つ）
         this.sceneManager.setSourcePosition(this.currentPosition);
         this.sceneManager.setSourceVisible(false);
 

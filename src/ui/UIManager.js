@@ -1,8 +1,11 @@
+import Chart from 'chart.js/auto';
+
 export class UIManager {
     constructor() {
         this.container = null;
         this.gameManager = null;
         this.currentMode = '8';
+        this.resultChart = null;
     }
 
     init(container, gameManager) {
@@ -60,6 +63,10 @@ export class UIManager {
                                 <span class="mode-label">フィルター有り</span>
                                 <span class="mode-desc">前後の区別を強調</span>
                             </button>
+                            <button id="filter-lr-btn" class="btn-mode">
+                                <span class="mode-label">左右強調</span>
+                                <span class="mode-desc">X座標をデフォルメしITD/ILDを拡張</span>
+                            </button>
                         </div>
                         <button id="back-from-filter-btn" class="btn-secondary">戻る</button>
                     </div>
@@ -108,6 +115,7 @@ export class UIManager {
                             <div>所要時間: <span id="duration">0秒</span></div>
                             <div>音響モード: <span id="filter-mode-display">HRTFのみ</span></div>
                         </div>
+                        <div class="radar-chart-container"><canvas id="result-radar-chart"></canvas></div>
                         <div id="result-breakdown" class="result-breakdown"></div>
                         <div class="result-buttons">
                             <button id="restart-btn" class="btn-primary">もう一度プレイ</button>
@@ -517,6 +525,30 @@ export class UIManager {
             .history-buttons {
                 margin-top: 20px;
             }
+
+            /* Radar Chart */
+            .radar-chart-container {
+                width: 100%;
+                max-height: 300px;
+                margin: 20px auto;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+            .radar-chart-container canvas {
+                max-width: 100%;
+                max-height: 300px;
+            }
+
+            @media (max-width: 480px) {
+                .radar-chart-container {
+                    max-height: 240px;
+                }
+                .radar-chart-container canvas {
+                    max-height: 240px;
+                }
+            }
         `;
         document.head.appendChild(style);
     }
@@ -550,6 +582,11 @@ export class UIManager {
         document.getElementById('filter-on-btn').addEventListener('click', () => {
             this.currentFilterMode = 'filter';
             this.gameManager.start(this.currentMode, 'filter');
+        });
+
+        document.getElementById('filter-lr-btn').addEventListener('click', () => {
+            this.currentFilterMode = 'lr-enhance';
+            this.gameManager.start(this.currentMode, 'lr-enhance');
         });
 
         document.getElementById('back-from-filter-btn').addEventListener('click', () => {
@@ -664,7 +701,7 @@ export class UIManager {
         }
 
         // フィルターモード表示
-        const filterModeText = filterMode === 'filter' ? 'フィルター有り' : 'HRTFのみ';
+        const filterModeText = filterMode === 'filter' ? 'フィルター有り' : filterMode === 'lr-enhance' ? '左右強調' : 'HRTFのみ';
         document.getElementById('filter-mode-display').textContent = filterModeText;
 
         // 詳細表示
@@ -684,6 +721,121 @@ export class UIManager {
         } else {
             breakdownEl.innerHTML = '';
         }
+
+        // --- レーダーチャート描画 ---
+        this.renderRadarChart(details);
+    }
+
+    /**
+     * 方向ごとの正答率レーダーチャートを描画する
+     * @param {Array} details - 各問題の結果配列
+     */
+    renderRadarChart(details) {
+        // 前回のチャートが残っていれば破棄
+        if (this.resultChart) {
+            this.resultChart.destroy();
+            this.resultChart = null;
+        }
+
+        const canvas = document.getElementById('result-radar-chart');
+        if (!canvas) return;
+
+        // 4方位 or 8方位のラベル定義
+        const is4Mode = this.currentMode === '4';
+        const allDirections = is4Mode
+            ? ['Front', 'Right', 'Back', 'Left']
+            : ['Front', 'Front-Right', 'Right', 'Back-Right', 'Back', 'Back-Left', 'Left', 'Front-Left'];
+
+        const dirLabelsJP = {
+            'Front': '前', 'Front-Right': '右前', 'Right': '右',
+            'Back-Right': '右後', 'Back': '後', 'Back-Left': '左後',
+            'Left': '左', 'Front-Left': '左前'
+        };
+
+        // 方向ごとの出題数・正解数を集計
+        const stats = {};
+        allDirections.forEach(dir => {
+            stats[dir] = { total: 0, correct: 0 };
+        });
+
+        if (details && details.length > 0) {
+            details.forEach(d => {
+                const dir = d.correct;
+                if (stats[dir]) {
+                    stats[dir].total++;
+                    if (d.isCorrect) {
+                        stats[dir].correct++;
+                    }
+                }
+            });
+        }
+
+        // 正答率を計算（出題なしは0%）
+        const labels = allDirections.map(dir => dirLabelsJP[dir]);
+        const data = allDirections.map(dir => {
+            const s = stats[dir];
+            return s.total > 0 ? Math.round((s.correct / s.total) * 100) : 0;
+        });
+
+        const ctx = canvas.getContext('2d');
+        this.resultChart = new Chart(ctx, {
+            type: 'radar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: '正答率 (%)',
+                    data: data,
+                    borderColor: '#00ffcc',
+                    backgroundColor: 'rgba(0, 255, 204, 0.2)',
+                    borderWidth: 2,
+                    pointBackgroundColor: '#00ffcc',
+                    pointBorderColor: '#00ffcc',
+                    pointRadius: 5,
+                    pointHoverRadius: 7,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                scales: {
+                    r: {
+                        min: 0,
+                        max: 100,
+                        ticks: {
+                            stepSize: 25,
+                            color: 'rgba(255, 255, 255, 0.6)',
+                            backdropColor: 'transparent',
+                            font: { size: 10 }
+                        },
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.15)'
+                        },
+                        angleLines: {
+                            color: 'rgba(255, 255, 255, 0.15)'
+                        },
+                        pointLabels: {
+                            color: 'rgba(255, 255, 255, 0.9)',
+                            font: { size: 13, weight: 'bold' }
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        labels: {
+                            color: 'rgba(255, 255, 255, 0.8)',
+                            font: { size: 12 }
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return `正答率: ${context.raw}%`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
     }
 
     showHistoryScreen(historyManager) {
@@ -706,7 +858,7 @@ export class UIManager {
 
         listEl.innerHTML = history.map(item => {
             const modeLabel = item.mode === '4' ? '四方位' : '八方位';
-            const filterLabel = item.filterMode === 'filter' ? 'フィルター' : 'HRTF';
+            const filterLabel = item.filterMode === 'filter' ? 'フィルター' : item.filterMode === 'lr-enhance' ? '左右強調' : 'HRTF';
             return `
             <div class="history-item">
                 <div>
